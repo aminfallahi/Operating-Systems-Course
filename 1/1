@@ -1,0 +1,75 @@
+#!/bin/bash
+
+#Keep the start time of the script in unix time format
+startTime=`date -u "+%s"`
+
+#Function for checking if a value is in an array or not, source: freenode.net #bash irc channel
+inarray() { local n=$1 h; shift; for h; do [[ $n = "$h" ]] && return; done; return 1; }
+
+#Shuffle a sequence of values between 1 and 8, $RANDOM is not used because handling repeated values takes time that way
+ans=`seq 1 8 | shuf`
+#Split by space
+ans=($(echo ${ans}))
+#Keep only 4 first integers of the array
+ans=("${ans[@]:0:4}")
+
+#Printing the answer for testing, to remove the comment if you like to know the answer before starting the game
+echo ${ans[@]}
+
+win=0
+#Lets let the user play 10 times
+for (( i=0; i<10; i++ )) do
+	echo -e "Enter 4 colors in a row ( Example: 5 3 2 7 ):\n1.orange\n2.blue\n3.green\n4.white\n5.yellow\n6.brown\n7.red\n8.grey"
+	read inp
+	inp=($(echo ${inp}))
+	inp=("${inp[@]:0:4}")
+	correct=0
+	wrongplace=0
+
+	for (( j=0; j<4; j++ )); do
+		if (( ${ans[$j]} == ${inp[$j]} )); then
+			let correct+=1
+		elif inarray ${inp[$j]} "${ans[@]}"; then
+			let wrongplace+=1
+		fi
+		
+		if (( $correct == 4 )); then
+			win=1
+			let tries=$i+1
+			j=4
+			i=10
+		fi
+	done
+	if (( $win != 1 && $i < 9 )); then
+		echo -e "Number of correct colors with correct place: $correct\nNumber of correct colors with wrong place: $wrongplace"
+	fi
+done
+
+#Store the finish time of the game
+endTime=`date -u "+%s"`
+#Calculate game time duration
+let gameTime=endTime-startTime
+
+if (( $win == 1 )); then
+	echo -e "You Win!\nNumber of tries: $tries\nTime you spent on this game: $gameTime seconds"
+	win=win
+else
+	tries=10
+	echo -e "You Lose!\nNumber of tries: $tries\nTime you spent on this game: $gameTime seconds"
+	win=lose
+fi
+
+#Add game results to file
+echo "$USER $win $tries $gameTime $(date)" >> gamedata
+chown $USER gamedata
+chmod 700 gamedata
+
+#A fucntion for doing thw score thing
+score(){
+	echo -e "Tries\tDate"
+	sort -t'|' -k3 < gamedata | cut -d'|' -f3,5 | tr '|' '\t'
+}
+#Aliasing score
+alias score=score
+
+echo "Dear $USER ! You $win the game after $tries tries in $gameTime seconds on $(date)" | mail -s "Your game results!" $USER

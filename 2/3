@@ -1,0 +1,12 @@
+#!/bin/bash
+echo `cut -d' ' -f1 Apache_web_log.txt | sort | uniq` > temp
+echo "Ips from US:" > temp2
+for ip in `cat temp`; do
+	country=$(whois $ip | grep -iE ^country | cut -d' ' -f9)
+	if [[ "$country" == *"US"* ]]; then
+		echo -e "$ip" >> temp2
+	fi
+done
+cat temp2 | lpr
+rm temp1
+rm temp2

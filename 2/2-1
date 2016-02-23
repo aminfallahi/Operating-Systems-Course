@@ -1,0 +1,2 @@
+#!/bin/bash
+cut -d' ' -f1 Apache_web_log.txt | sort | uniq | wc -l
